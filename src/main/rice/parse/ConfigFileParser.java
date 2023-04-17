@@ -46,25 +46,39 @@ public class ConfigFileParser {
      * @param jsonString The contents of the configuration file as a JSON string
      * @return The parsed ConfigFile object
      */
-    private static ConfigFile convertToConfigFile(String jsonString) {
+    private ConfigFile convertToConfigFile(String jsonString) throws InvalidConfigException {
         JSONObject jsonObject = new JSONObject(jsonString);
+
         String funcName = jsonObject.getString("fname");
         JSONArray nodesArray = jsonObject.getJSONArray("nodes");
         int numRand = jsonObject.getInt("num Rand");
 
+        JSONArray types = this.genJSONArray("types", jsonObject);
+        JSONArray exDomain = this.genJSONArray("exhaustive domain", jsonObject);
+        JSONArray ranDomain = this.genJSONArray("random domain", jsonObject);
+
+        if (!(types.length() == exDomain.length() && exDomain.length() == ranDomain.length() && types.length() == ranDomain.length())) {
+            throw new InvalidConfigException("The length should be the same");
+        }
         List<APyNode<?>> nodes = new ArrayList<>();
-
         for (int i = 0; i < nodesArray.length(); i++) {
-            JSONObject nodeObject = nodesArray.getJSONObject(i);
-            String types = nodeObject.getString("types");
+            String typeIndex = (String) types.get(i);
+            String exDom = (String) exDomain.get(i);
+            String ranDom = (String) ranDomain.get(i);
 
-            List<String> exDomain = stringArrayToList(nodeObject.getJSONArray("exhaustive Domain"));
-            List<String> ranDomain = stringArrayToList(nodeObject.getJSONArray("random Domain"));
-
-            nodes.add(createSimpleNode(types, exDomain, ranDomain));
+            nodes.add(createSimpleNode(typeIndex, exDom, ranDom));
         }
 
         return new ConfigFile(funcName, nodes, numRand);
+    }
+    private JSONArray genJSONArray(String key, JSONObject jObj) throws InvalidConfigException{
+        try {
+            JSONArray jArray = (JSONArray) jObj.get(key);
+            return jArray;
+        }
+        catch (ClassCastException) {
+            throw new InvalidConfigException("Unable to convert to JSONArray");
+        }
     }
 
     /**
@@ -169,23 +183,26 @@ public class ConfigFileParser {
      * @param ranDomain The random domain
      * @return The created APyNode object
      */
-    private static APyNode<?> createSimpleNode(String types, List<String> exDomain, List<String> ranDomain) throws InvalidConfigException{
+    private static APyNode<?> createSimpleNode(String types, String exDomain, String ranDomain) throws InvalidConfigException{
         APyNode<?> node;
 
         switch (types) {
             case "int":
                 node = new PyIntNode();
-                node.setExDomain(parseIntDomain(exDomain.get(0)));
+                node.setExDomain(parseIntDomain(exDomain.toString()));
+                node.setRanDomain(parseIntDomain(ranDomain);
 //                        (types, parseIntDomain(exDomain.get(0)), parseIntDomain(ranDomain.get(0)));
                 break;
             case "bool":
                 node = new PyBoolNode();
-                node.setExDomain(parseBoolDomain(exDomain.get(0)));
+                node.setExDomain(parseBoolDomain(exDomain));
+                node.setRanDomain(parseBoolDomain(ranDomain));
                 break;
 
             case "float":
                 node = new PyFloatNode();
-                node.setExDomain(parseFloatDomain(exDomain.get(0)));
+                node.setExDomain(parseFloatDomain(exDomain));
+                node.setRanDomain(parseFloatDomain(ranDomain));
                 break;
             default:  throw new InvalidConfigException("Not The Simple Types");
         }
@@ -194,6 +211,18 @@ public class ConfigFileParser {
 
     private static APyNode<?> createIterableNode(String types, List<String> exDomain, List<String> ranDomain){
         APyNode<?> node;
-        switch (types)
+        if (types.startsWith("list")) {
+            node = new PyListNode();
+
+        }
+        if (types.startsWith("set")) {
+            node = new PySetNode<>();
+
+        }
+        if (types.startsWith("tuple")) {
+            node = new PyTupleNode<>();
+
+        }
+        node.setExDomain(parseIntDomain(exDomain.get(0)));
     }
 }
