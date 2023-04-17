@@ -139,9 +139,15 @@ public class ConfigFileParser {
 
         String[] parts = removeWhiteSpace(domain).split(",");
         List<Integer> result = new ArrayList<>();
-        for (String part : parts) {
-            result.add(Integer.parseInt(part));
+        try {
+            for (String part : parts) {
+                result.add(Integer.parseInt(part));
+            }
+        } catch (NumberFormatException n) {
+            throw new InvalidConfigException("Not an Integer");
         }
+
+
         return result;
     }
 
@@ -184,13 +190,43 @@ public class ConfigFileParser {
      * @param domain The string to be parsed
      * @return The List of floats
      */
-    private static List<Number> parseFloatDomain(String domain) {
+    private static List<Number> parseFloatDomain(String domain) throws InvalidConfigException {
+        try {
+            if (domain.contains("~")) {
+                int n = domain.indexOf("~");
+                int startNum = Integer.parseInt(domain.substring(0, n).strip());
+                int endNum = Integer.parseInt(domain.substring(n+1).strip());
+                if (startNum > endNum ){
+                    throw new InvalidConfigException("Invalid Domain");
+                }
+                List<Integer> range = new ArrayList<>();
+                for (int i = startNum; i <= endNum; i++) {
+                    range.add(i);
+                }
+
+                List<Number> fltRange = new ArrayList<>();
+                for (Number num: range) {
+                    fltRange.add(num.doubleValue());
+                }
+
+                return fltRange;
+            }
+
+        } catch (NumberFormatException e) {
+            throw new InvalidConfigException("Failed to parse; invalid range");
+        };
+
+
         String[] parts = removeWhiteSpace(domain).split(",");
         List<Number> result = new ArrayList<>();
-        for (String part : parts) {
-            result.add(Float.parseFloat(part));
+        try {
+            for (String part : parts) {
+                result.add(Float.parseFloat(part));
+            }
+            return result;
+        } catch (NumberFormatException n) {
+            throw new InvalidConfigException("Not a Float");
         }
-        return result;
     }
 
     private static List<Integer> parseIterableDomain(String domain) throws InvalidConfigException {
@@ -218,27 +254,27 @@ public class ConfigFileParser {
                 node = new PyIntNode();
                 node.setExDomain(parseIntDomain(exDomain.toString()));
                 node.setRanDomain(parseIntDomain(ranDomain));
-                parenthesisCheck(types, exDomain, ranDomain);
+                parenthesisCheckSimple(types, exDomain, ranDomain);
                 break;
             case "bool":
                 node = new PyBoolNode();
                 node.setExDomain(parseBoolDomain(exDomain));
                 node.setRanDomain(parseBoolDomain(ranDomain));
-                parenthesisCheck(types, exDomain, ranDomain);
+                parenthesisCheckSimple(types, exDomain, ranDomain);
                 break;
 
             case "float":
                 node = new PyFloatNode();
                 node.setExDomain(parseFloatDomain(exDomain));
                 node.setRanDomain(parseFloatDomain(ranDomain));
-                parenthesisCheck(types, exDomain, ranDomain);
+                parenthesisCheckSimple(types, exDomain, ranDomain);
                 break;
             default:  return createIterableNode(types, exDomain, ranDomain);
         }
         return node;
     }
 
-    private static void parenthesisCheck(String types, String exDomain, String ranDomain) throws InvalidConfigException{
+    private static void parenthesisCheckSimple(String types, String exDomain, String ranDomain) throws InvalidConfigException{
         if (types.contains("(") || exDomain.contains("(") || ranDomain.contains("(")) {
             throw new InvalidConfigException("Simple Nodes should not contain opening parenthesis");
         }
@@ -256,18 +292,27 @@ public class ConfigFileParser {
 
 
         if (types.startsWith("list")) {
-            node = new PyListNode(child);
+            node = new PyListNode<>(child);
+            parenthesisCheckIterable(types, exDomain, ranDomain);
 
         }
         else if (types.startsWith("set")) {
             node = new PySetNode<>(child);
+            parenthesisCheckIterable(types, exDomain, ranDomain);
 
         }
         else if (types.startsWith("tuple")) {
             node = new PyTupleNode<>(child);
+            parenthesisCheckIterable(types, exDomain, ranDomain);
 
         }
         else if (types.startsWith("dict")) {
+            if (!(types.contains("(") || exDomain.contains("(") || ranDomain.contains("("))) {
+                throw new InvalidConfigException("Dict nodes should contain opening parenthesis");
+            }
+            if (!(types.contains(":") || exDomain.contains(":") || ranDomain.contains(":")) ){
+                throw new InvalidConfigException("Dict Nodes should contain colon");
+            }
             APyNode<?> leftChild = createNode(types.substring(types.indexOf("(")+1, types.indexOf(":")).strip(),
                     exDomain.substring(exDomain.indexOf("(")+1, types.indexOf(":")).strip(),
                     ranDomain.substring(ranDomain.indexOf("(")+1, types.indexOf(":")).strip());
@@ -276,12 +321,26 @@ public class ConfigFileParser {
                     ranDomain.substring(ranDomain.indexOf(":")+1).strip());
             node = new PyDictNode<>(leftChild, rightChild);
         }
+        else if (types.startsWith("str")) {
+            node = new PyStringNode(Set.of());
+            node.setExDomain(parseIterableDomain(exDomain));
+            node.setRanDomain(parseIterableDomain(ranDomain));
+            parenthesisCheckSimple(types, exDomain, ranDomain);
+        }
 
         else {throw new InvalidConfigException("Invalid Iterable Node");}
 
         node.setExDomain(parseIntDomain(exDomain.substring(0, exDomain.indexOf("("))));
         node.setRanDomain(parseIntDomain(ranDomain.substring(0, ranDomain.indexOf("("))));
         return node;
+    }
+    private static void parenthesisCheckIterable(String types, String exDomain, String ranDomain) throws InvalidConfigException{
+        if (!(types.contains("(") || exDomain.contains("(") || ranDomain.contains("("))) {
+            throw new InvalidConfigException("Iterable Nodes should contain opening parenthesis");
+        }
+        if (types.contains(":") || exDomain.contains(":") || ranDomain.contains(":")) {
+            throw new InvalidConfigException("Iterable Nodes (not dict) should not contain colon");
+        }
     }
 
 }
