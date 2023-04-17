@@ -157,7 +157,7 @@ public class ConfigFileParser {
     /**
      * Creates an APyNode object based on the given inputs
      *
-     * @param types The type of APyNode to create (e.g., "int", "bool", "float")
+     * @param types The type of APyNode to create
      * @param exDomain The exhaustive domain
      * @param ranDomain The random domain
      * @return The created APyNode object
@@ -167,15 +167,19 @@ public class ConfigFileParser {
 
         switch (types) {
             case "int":
-                node = new PyIntNode(types, parseFloatDomain(exDomain.get(0)), parseFloatDomain(ranDomain.get(0)));
+                node = new PyIntNode(types, parseIntDomain(exDomain.get(0)), parseIntDomain(ranDomain.get(0)));
                 break;
             case "bool":
-                node = new PyBoolNode(types, parseFloatDomain(exDomain.get(0)), parseFloatDomain(ranDomain.get(0)));
+                node = new PyBoolNode(types, parseBoolDomain(exDomain.get(0)), parseBoolDomain(ranDomain.get(0)));
                 break;
 
             case "float":
                 node = new PyFloatNode(types, parseFloatDomain(exDomain.get(0)), parseFloatDomain(ranDomain.get(0)));
                 break;
+            default:
+                node = new APyNode<>(types, parseNumberDomain(exDomain.get(0)), parseNumberDomain(ranDomain.get(0)));
+
+
         }
         return node;
     }
