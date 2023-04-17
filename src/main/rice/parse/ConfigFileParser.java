@@ -46,16 +46,16 @@ public class ConfigFileParser {
      * @param jsonString The contents of the configuration file as a JSON string
      * @return The parsed ConfigFile object
      */
-    private ConfigFile convertToConfigFile(String jsonString) throws InvalidConfigException {
+    private static ConfigFile convertToConfigFile(String jsonString) throws InvalidConfigException {
         JSONObject jsonObject = new JSONObject(jsonString);
 
         String funcName = jsonObject.getString("fname");
         JSONArray nodesArray = jsonObject.getJSONArray("nodes");
         int numRand = jsonObject.getInt("num Rand");
 
-        JSONArray types = this.genJSONArray("types", jsonObject);
-        JSONArray exDomain = this.genJSONArray("exhaustive domain", jsonObject);
-        JSONArray ranDomain = this.genJSONArray("random domain", jsonObject);
+        JSONArray types = genJSONArray("types", jsonObject);
+        JSONArray exDomain = genJSONArray("exhaustive domain", jsonObject);
+        JSONArray ranDomain = genJSONArray("random domain", jsonObject);
 
         if (!(types.length() == exDomain.length() && exDomain.length() == ranDomain.length() && types.length() == ranDomain.length())) {
             throw new InvalidConfigException("The length should be the same");
@@ -66,12 +66,12 @@ public class ConfigFileParser {
             String exDom = (String) exDomain.get(i);
             String ranDom = (String) ranDomain.get(i);
 
-            nodes.add(createSimpleNode(typeIndex, exDom, ranDom));
+            nodes.add(createNode(typeIndex, exDom, ranDom));
         }
 
         return new ConfigFile(funcName, nodes, numRand);
     }
-    private JSONArray genJSONArray(String key, JSONObject jObj) throws InvalidConfigException{
+    private static JSONArray genJSONArray(String key, JSONObject jObj) throws InvalidConfigException{
         try {
             JSONArray jArray = (JSONArray) jObj.get(key);
             return jArray;
@@ -183,7 +183,7 @@ public class ConfigFileParser {
      * @param ranDomain The random domain
      * @return The created APyNode object
      */
-    private static APyNode<?> createSimpleNode(String types, String exDomain, String ranDomain) throws InvalidConfigException{
+    private static APyNode<?> createNode(String types, String exDomain, String ranDomain) throws InvalidConfigException{
         APyNode<?> node;
 
         switch (types) {
@@ -204,25 +204,44 @@ public class ConfigFileParser {
                 node.setExDomain(parseFloatDomain(exDomain));
                 node.setRanDomain(parseFloatDomain(ranDomain));
                 break;
-            default:  throw new InvalidConfigException("Not The Simple Types");
+            default:  return createIterableNode(types, exDomain, ranDomain);
         }
         return node;
     }
 
-    private static APyNode<?> createIterableNode(String types, List<String> exDomain, List<String> ranDomain){
+    private static APyNode<?> createIterableNode(String types, String exDomain, String ranDomain)
+            throws InvalidConfigException {
         APyNode<?> node;
+        APyNode<?> child = createNode(types.substring(types.indexOf("(")+1),
+                exDomain.substring(exDomain.indexOf("(")+1),
+                ranDomain.substring(ranDomain.indexOf("(")+1));
+
+
         if (types.startsWith("list")) {
-            node = new PyListNode();
+            node = new PyListNode(child);
 
         }
-        if (types.startsWith("set")) {
-            node = new PySetNode<>();
+        else if (types.startsWith("set")) {
+            node = new PySetNode<>(child);
 
         }
-        if (types.startsWith("tuple")) {
-            node = new PyTupleNode<>();
+        else if (types.startsWith("tuple")) {
+            node = new PyTupleNode<>(child);
 
         }
-        node.setExDomain(parseIntDomain(exDomain.get(0)));
+        else if (types.startsWith("dict")) {
+            APyNode<?> leftChild = createNode(types.substring(types.indexOf("(")+1, types.indexOf(":")),
+                    exDomain.substring(exDomain.indexOf("(")+1, types.indexOf(":")),
+                    ranDomain.substring(ranDomain.indexOf("(")+1, types.indexOf(":")));
+            APyNode<?> rightChild = createNode(types.substring(types.indexOf(":")+1),
+                    exDomain.substring(exDomain.indexOf(":")+1),
+                    ranDomain.substring(ranDomain.indexOf(":")+1));
+            node = new PyDictNode<>(leftChild, rightChild);
+        }
+
+        else : throw new InvalidConfigException("Invalid Iterable Node");
+
+        node.setExDomain(parseIntDomain(exDomain));
+        node.setRanDomain(parseIntDomain(ranDomain));
     }
 }
