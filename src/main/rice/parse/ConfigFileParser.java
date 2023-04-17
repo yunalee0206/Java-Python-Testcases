@@ -167,14 +167,14 @@ public class ConfigFileParser {
 
         switch (types) {
             case "int":
-                node = new PyIntNode();
+                node = new PyIntNode(types, parseFloatDomain(exDomain.get(0)), parseFloatDomain(ranDomain.get(0)));
                 break;
             case "bool":
-                node = new PyBoolNode();
+                node = new PyBoolNode(types, parseFloatDomain(exDomain.get(0)), parseFloatDomain(ranDomain.get(0)));
                 break;
 
             case "float":
-                node = new PyFloatNode();
+                node = new PyFloatNode(types, parseFloatDomain(exDomain.get(0)), parseFloatDomain(ranDomain.get(0)));
                 break;
         }
         return node;
