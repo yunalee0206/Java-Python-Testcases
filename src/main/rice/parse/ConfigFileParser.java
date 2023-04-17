@@ -1,10 +1,7 @@
 package main.rice.parse;
 
 
-import main.rice.node.APyNode;
-import main.rice.node.PyBoolNode;
-import main.rice.node.PyFloatNode;
-import main.rice.node.PyIntNode;
+import main.rice.node.*;
 import org.json.*;
 import java.io.*;
 import java.nio.file.*;
@@ -64,7 +61,7 @@ public class ConfigFileParser {
             List<String> exDomain = stringArrayToList(nodeObject.getJSONArray("exhaustive Domain"));
             List<String> ranDomain = stringArrayToList(nodeObject.getJSONArray("random Domain"));
 
-            nodes.add(createAPyNode(types, exDomain, ranDomain));
+            nodes.add(createSimpleNode(types, exDomain, ranDomain));
         }
 
         return new ConfigFile(funcName, nodes, numRand);
@@ -115,11 +112,13 @@ public class ConfigFileParser {
      * @param domain The string to be parsed
      * @return The List of booleans
      */
-    private static List<Boolean> parseBoolDomain(String domain) {
-        String[] parts = removeWhiteSpace(domain).split(",");
-        List<Boolean> result = new ArrayList<>();
-        for (String part : parts) {
-            result.add(Boolean.parseBoolean(part));
+    private static List<Integer> parseBoolDomain(String domain) throws InvalidConfigException {
+        List<Integer> result = parseIntDomain(domain);
+        for (Integer part : result) {
+            if (!part.equals(0) && !part.equals(1)) {
+                throw new InvalidConfigException("Invalid Boolean; input domain contains other than 0 or 1");
+            }
+
         }
         return result;
     }
@@ -154,6 +153,14 @@ public class ConfigFileParser {
         return result;
     }
 
+    private static List<Integer> parseIterableDomain(String domain) throws InvalidConfigException {
+        List<Integer> result = parseIntDomain(domain);
+        for (Integer part : result) {
+            if (part < 0) {
+                throw new InvalidConfigException("Invalid Iterable Objects; input domain contains negative integers");
+            }
+        }
+    }
     /**
      * Creates an APyNode object based on the given inputs
      *
@@ -162,25 +169,31 @@ public class ConfigFileParser {
      * @param ranDomain The random domain
      * @return The created APyNode object
      */
-    private static APyNode<?> createAPyNode(String types, List<String> exDomain, List<String> ranDomain){
-        APyNode<?> node = null;
+    private static APyNode<?> createSimpleNode(String types, List<String> exDomain, List<String> ranDomain) throws InvalidConfigException{
+        APyNode<?> node;
 
         switch (types) {
             case "int":
-                node = new PyIntNode(types, parseIntDomain(exDomain.get(0)), parseIntDomain(ranDomain.get(0)));
+                node = new PyIntNode();
+                node.setExDomain(parseIntDomain(exDomain.get(0)));
+//                        (types, parseIntDomain(exDomain.get(0)), parseIntDomain(ranDomain.get(0)));
                 break;
             case "bool":
-                node = new PyBoolNode(types, parseBoolDomain(exDomain.get(0)), parseBoolDomain(ranDomain.get(0)));
+                node = new PyBoolNode();
+                node.setExDomain(parseBoolDomain(exDomain.get(0)));
                 break;
 
             case "float":
-                node = new PyFloatNode(types, parseFloatDomain(exDomain.get(0)), parseFloatDomain(ranDomain.get(0)));
+                node = new PyFloatNode();
+                node.setExDomain(parseFloatDomain(exDomain.get(0)));
                 break;
-            default:
-                node = new APyNode<>(types, parseNumberDomain(exDomain.get(0)), parseNumberDomain(ranDomain.get(0)));
-
-
+            default:  throw new InvalidConfigException("Not The Simple Types");
         }
         return node;
+    }
+
+    private static APyNode<?> createIterableNode(String types, List<String> exDomain, List<String> ranDomain){
+        APyNode<?> node;
+        switch (types)
     }
 }
