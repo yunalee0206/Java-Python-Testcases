@@ -32,26 +32,32 @@ public class ConfigFileParser {
      * @throws InvalidConfigException If there is an error parsing the configuration file
      */
     public static ConfigFile parse(String contents) throws InvalidConfigException {
-        try {
-            String fileContent = readFile(contents);
-            return convertToConfigFile(fileContent);
-        } catch (IOException e) {
-            throw new InvalidConfigException(e.getMessage());
+        JSONObject jsonObject;
+        try {jsonObject = new JSONObject(contents);
         }
-    }
+        catch (JSONException c) {
+            throw new InvalidConfigException("jsonObject is not a valid JSONObject");
+        }
 
-    /**
-     * Converts the contents of a configuration file in JSON format into a ConfigFile object
-     *
-     * @param jsonString The contents of the configuration file as a JSON string
-     * @return The parsed ConfigFile object
-     */
-    private static ConfigFile convertToConfigFile(String jsonString) throws InvalidConfigException {
-        JSONObject jsonObject = new JSONObject(jsonString);
+        Set<String> keySet = new HashSet<>(Set.of("fname", "num random", "types", "exhaustive domain", "random domain"));
+        if (!(jsonObject.keySet().equals(keySet))) {
+            throw new InvalidConfigException("jsonObject does not have valid keys");
+        }
 
-        String funcName = jsonObject.getString("fname");
-        JSONArray nodesArray = jsonObject.getJSONArray("nodes");
-        int numRand = jsonObject.getInt("num Rand");
+        String funcName;
+        try {funcName = jsonObject.getString("fname");}
+        catch (JSONException c) {
+            throw new InvalidConfigException("fname is not a string");
+        }
+
+        int numRand;
+        try {numRand = jsonObject.getInt("num random");}
+        catch (JSONException c) {
+            throw new InvalidConfigException("numRand is not an Integer");
+        };
+
+//        JSONArray nodesArray = jsonObject.getJSONArray("nodes");
+
 
         JSONArray types = genJSONArray("types", jsonObject);
         JSONArray exDomain = genJSONArray("exhaustive domain", jsonObject);
@@ -61,12 +67,12 @@ public class ConfigFileParser {
             throw new InvalidConfigException("The length should be the same");
         }
         List<APyNode<?>> nodes = new ArrayList<>();
-        for (int i = 0; i < nodesArray.length(); i++) {
+        for (int i = 0; i < types.length(); i++) {
             String typeIndex = (String) types.get(i);
             String exDom = (String) exDomain.get(i);
             String ranDom = (String) ranDomain.get(i);
 
-            nodes.add(createNode(typeIndex, exDom, ranDom));
+            nodes.add(createNode(typeIndex.strip(), exDom.strip(), ranDom.strip()));
         }
 
         return new ConfigFile(funcName, nodes, numRand);
@@ -76,7 +82,7 @@ public class ConfigFileParser {
             JSONArray jArray = (JSONArray) jObj.get(key);
             return jArray;
         }
-        catch (ClassCastException) {
+        catch (ClassCastException c) {
             throw new InvalidConfigException("Unable to convert to JSONArray");
         }
     }
@@ -111,7 +117,26 @@ public class ConfigFileParser {
      * @param domain The string to be parsed
      * @return The List of integers
      */
-    private static List<Integer> parseIntDomain(String domain) {
+    private static List<Integer> parseIntDomain(String domain) throws InvalidConfigException{
+        try {
+            if (domain.contains("~")) {
+                int n = domain.indexOf("~");
+                int startNum = Integer.parseInt(domain.substring(0, n).strip());
+                int endNum = Integer.parseInt(domain.substring(n+1).strip());
+                if (startNum > endNum ){
+                    throw new InvalidConfigException("Invalid Domain");
+                }
+                List<Integer> range = new ArrayList<>();
+                for (int i = startNum; i <= endNum; i++) {
+                    range.add(i);
+                }
+                return range;
+            }
+
+        } catch (NumberFormatException e) {
+            throw new InvalidConfigException("Failed to parse; invalid range");
+        };
+
         String[] parts = removeWhiteSpace(domain).split(",");
         List<Integer> result = new ArrayList<>();
         for (String part : parts) {
@@ -119,6 +144,7 @@ public class ConfigFileParser {
         }
         return result;
     }
+
 
     /**
      * Parses a string into a List of booleans
@@ -174,6 +200,7 @@ public class ConfigFileParser {
                 throw new InvalidConfigException("Invalid Iterable Objects; input domain contains negative integers");
             }
         }
+        return result;
     }
     /**
      * Creates an APyNode object based on the given inputs
@@ -186,35 +213,46 @@ public class ConfigFileParser {
     private static APyNode<?> createNode(String types, String exDomain, String ranDomain) throws InvalidConfigException{
         APyNode<?> node;
 
-        switch (types) {
+        switch (types.strip()) {
             case "int":
                 node = new PyIntNode();
                 node.setExDomain(parseIntDomain(exDomain.toString()));
-                node.setRanDomain(parseIntDomain(ranDomain);
-//                        (types, parseIntDomain(exDomain.get(0)), parseIntDomain(ranDomain.get(0)));
+                node.setRanDomain(parseIntDomain(ranDomain));
+                parenthesisCheck(types, exDomain, ranDomain);
                 break;
             case "bool":
                 node = new PyBoolNode();
                 node.setExDomain(parseBoolDomain(exDomain));
                 node.setRanDomain(parseBoolDomain(ranDomain));
+                parenthesisCheck(types, exDomain, ranDomain);
                 break;
 
             case "float":
                 node = new PyFloatNode();
                 node.setExDomain(parseFloatDomain(exDomain));
                 node.setRanDomain(parseFloatDomain(ranDomain));
+                parenthesisCheck(types, exDomain, ranDomain);
                 break;
             default:  return createIterableNode(types, exDomain, ranDomain);
         }
         return node;
     }
 
+    private static void parenthesisCheck(String types, String exDomain, String ranDomain) throws InvalidConfigException{
+        if (types.contains("(") || exDomain.contains("(") || ranDomain.contains("(")) {
+            throw new InvalidConfigException("Simple Nodes should not contain opening parenthesis");
+        }
+        if (types.contains(":") || exDomain.contains(":") || ranDomain.contains(":")) {
+            throw new InvalidConfigException("Simple Nodes should not contain colon");
+        }
+    }
+
     private static APyNode<?> createIterableNode(String types, String exDomain, String ranDomain)
             throws InvalidConfigException {
         APyNode<?> node;
-        APyNode<?> child = createNode(types.substring(types.indexOf("(")+1),
-                exDomain.substring(exDomain.indexOf("(")+1),
-                ranDomain.substring(ranDomain.indexOf("(")+1));
+        APyNode<?> child = createNode(types.substring(types.indexOf("(")+1).strip(),
+                exDomain.substring(exDomain.indexOf("(")+1).strip(),
+                ranDomain.substring(ranDomain.indexOf("(")+1).strip());
 
 
         if (types.startsWith("list")) {
@@ -230,18 +268,20 @@ public class ConfigFileParser {
 
         }
         else if (types.startsWith("dict")) {
-            APyNode<?> leftChild = createNode(types.substring(types.indexOf("(")+1, types.indexOf(":")),
-                    exDomain.substring(exDomain.indexOf("(")+1, types.indexOf(":")),
-                    ranDomain.substring(ranDomain.indexOf("(")+1, types.indexOf(":")));
-            APyNode<?> rightChild = createNode(types.substring(types.indexOf(":")+1),
-                    exDomain.substring(exDomain.indexOf(":")+1),
-                    ranDomain.substring(ranDomain.indexOf(":")+1));
+            APyNode<?> leftChild = createNode(types.substring(types.indexOf("(")+1, types.indexOf(":")).strip(),
+                    exDomain.substring(exDomain.indexOf("(")+1, types.indexOf(":")).strip(),
+                    ranDomain.substring(ranDomain.indexOf("(")+1, types.indexOf(":")).strip());
+            APyNode<?> rightChild = createNode(types.substring(types.indexOf(":")+1).strip(),
+                    exDomain.substring(exDomain.indexOf(":")+1).strip(),
+                    ranDomain.substring(ranDomain.indexOf(":")+1).strip());
             node = new PyDictNode<>(leftChild, rightChild);
         }
 
-        else : throw new InvalidConfigException("Invalid Iterable Node");
+        else {throw new InvalidConfigException("Invalid Iterable Node");}
 
-        node.setExDomain(parseIntDomain(exDomain));
-        node.setRanDomain(parseIntDomain(ranDomain));
+        node.setExDomain(parseIntDomain(exDomain.substring(0, exDomain.indexOf("("))));
+        node.setRanDomain(parseIntDomain(ranDomain.substring(0, ranDomain.indexOf("("))));
+        return node;
     }
+
 }
