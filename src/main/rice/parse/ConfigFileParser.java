@@ -5,7 +5,6 @@ import main.rice.node.APyNode;
 import main.rice.node.PyBoolNode;
 import main.rice.node.PyFloatNode;
 import main.rice.node.PyIntNode;
-import main.rice.obj.PyIntObj;
 import org.json.*;
 import java.io.*;
 import java.nio.file.*;
