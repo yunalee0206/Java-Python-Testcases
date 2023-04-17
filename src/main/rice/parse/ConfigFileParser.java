@@ -77,6 +77,16 @@ public class ConfigFileParser {
 
         return new ConfigFile(funcName, nodes, numRand);
     }
+
+
+    /**
+     * Generates a JSONArray from a JSONObject using the specified key
+     *
+     * @param key The key for the JSONArray
+     * @param jObj The JSONObject from which to generate the JSONArray
+     * @return The generated JSONArray
+     * @throws InvalidConfigException If there is an error generating the JSONArray
+     */
     private static JSONArray genJSONArray(String key, JSONObject jObj) throws InvalidConfigException{
         try {
             JSONArray jArray = (JSONArray) jObj.get(key);
@@ -87,19 +97,19 @@ public class ConfigFileParser {
         }
     }
 
-    /**
-     * Converts a JSONArray of strings into a List of strings
-     *
-     * @param jsonArray The JSONArray to be converted
-     * @return The List of strings
-     */
-    private static List<String> stringArrayToList(JSONArray jsonArray) {
-        List<String> list = new ArrayList<>();
-        for (int i = 0; i < jsonArray.length(); i++) {
-            list.add(jsonArray.getString(i));
-        }
-        return list;
-    }
+//    /**
+//     * Converts a JSONArray of strings into a List of strings
+//     *
+//     * @param jsonArray The JSONArray to be converted
+//     * @return The List of strings
+//     */
+//    private static List<String> stringArrayToList(JSONArray jsonArray) {
+//        List<String> list = new ArrayList<>();
+//        for (int i = 0; i < jsonArray.length(); i++) {
+//            list.add(jsonArray.getString(i));
+//        }
+//        return list;
+//    }
 
     /**
      * Removes whitespaces from a string
@@ -229,6 +239,13 @@ public class ConfigFileParser {
         }
     }
 
+    /**
+     * Parses the domain string for iterable domain values.
+     *
+     * @param domain The domain string to parse
+     * @return A list of iterable domain values
+     * @throws InvalidConfigException If the domain string is invalid
+     */
     private static List<Integer> parseIterableDomain(String domain) throws InvalidConfigException {
         List<Integer> result = parseIntDomain(domain);
         for (Integer part : result) {
@@ -238,6 +255,7 @@ public class ConfigFileParser {
         }
         return result;
     }
+
     /**
      * Creates an APyNode object based on the given inputs
      *
@@ -274,6 +292,14 @@ public class ConfigFileParser {
         return node;
     }
 
+    /**
+     * Performs parenthesis and colon checks for simple types of Nodes
+     *
+     * @param types The simple type of APyNode
+     * @param exDomain The exhaustive domain
+     * @param ranDomain The random domain
+     * @throws InvalidConfigException If Node contains invalid characters
+     */
     private static void parenthesisCheckSimple(String types, String exDomain, String ranDomain) throws InvalidConfigException{
         if (types.contains("(") || exDomain.contains("(") || ranDomain.contains("(")) {
             throw new InvalidConfigException("Simple Nodes should not contain opening parenthesis");
@@ -283,6 +309,15 @@ public class ConfigFileParser {
         }
     }
 
+    /**
+     * Creates an iterable APyNode object based on the given inputs.
+     *
+     * @param types The type of iterable APyNode to create
+     * @param exDomain The exhaustive domain
+     * @param ranDomain The random domain
+     * @return The created iterable APyNode object
+     * @throws InvalidConfigException If the inputs are invalid
+     */
     private static APyNode<?> createIterableNode(String types, String exDomain, String ranDomain)
             throws InvalidConfigException {
         APyNode<?> node;
@@ -334,6 +369,15 @@ public class ConfigFileParser {
         node.setRanDomain(parseIntDomain(ranDomain.substring(0, ranDomain.indexOf("("))));
         return node;
     }
+
+    /**
+     * Performs parenthesis and colon checks for iterable types of Nodes
+     *
+     * @param types The type of iterable APyNode
+     * @param exDomain The exhaustive domain
+     * @param ranDomain The random domain
+     * @throws InvalidConfigException If Node contains invalid characters
+     */
     private static void parenthesisCheckIterable(String types, String exDomain, String ranDomain) throws InvalidConfigException{
         if (!(types.contains("(") || exDomain.contains("(") || ranDomain.contains("("))) {
             throw new InvalidConfigException("Iterable Nodes should contain opening parenthesis");
