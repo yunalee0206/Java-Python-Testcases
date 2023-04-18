@@ -4,6 +4,7 @@ package main.rice.parse;
 import main.rice.node.*;
 import org.json.*;
 import java.io.*;
+import java.lang.reflect.Array;
 import java.nio.file.*;
 import java.util.*;
 
@@ -249,12 +250,16 @@ public class ConfigFileParser {
         else {
             key = domain.substring(0, x);
         }
+//
+//        System.out.println(key + " key");
+//        System.out.println(domain +" domain");
+//
+//        System.out.println(removeWhiteSpace(key.strip().substring(1, key.strip().length()-1)) + " x split");
 
-        System.out.println(key + " key");
-        System.out.println(domain +" domain");
-
-        String[] parts = removeWhiteSpace(key.strip().substring(0, key.strip().length()-1)).split(",");
-        System.out.println(parts + " parts");
+        String[] parts = removeWhiteSpace(key.strip().substring(1)).split(",");
+//        System.out.println(Array.get(parts, 0).toString() + " " + Array.get(parts, 1));
+//        System.out.println(parts.toString() + " parts");
+//        System.out.println(parts.getClass());
         List<Number> result = new ArrayList<>();
         try {
             for (String part : parts) {
@@ -326,7 +331,7 @@ public class ConfigFileParser {
 
             case "float":
                 node = new PyFloatNode();
-                node.setExDomain(parseFloatDomain(exDomain));
+                node.setExDomain(parseFloatDomain(exDomain.toString()));
                 node.setRanDomain(parseFloatDomain(ranDomain));
                 parenthesisCheckSimple(types, exDomain, ranDomain);
                 break;
