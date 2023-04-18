@@ -256,9 +256,9 @@ public class ConfigFileParser {
 //
 //        System.out.println(removeWhiteSpace(key.strip().substring(1, key.strip().length()-1)) + " x split");
 
-        String[] parts = removeWhiteSpace(key.strip().substring(1)).split(",");
+        String[] parts = removeWhiteSpace(key.strip().substring(1, key.strip().length()-1)).split(",");
 //        System.out.println(Array.get(parts, 0).toString() + " " + Array.get(parts, 1));
-//        System.out.println(parts.toString() + " parts");
+          System.out.println(parts.toString() + " parts");
 //        System.out.println(parts.getClass());
         List<Number> result = new ArrayList<>();
         try {
@@ -316,7 +316,7 @@ public class ConfigFileParser {
                 node = new PyIntNode();
                 node.setExDomain(parseIntDomain(exDomain.toString()));
                 node.setRanDomain(parseIntDomain(ranDomain));
-                parenthesisCheckSimple(types, exDomain, ranDomain);
+                parenthesesCheckSimple(types, exDomain, ranDomain);
                 break;
 
 
@@ -326,14 +326,14 @@ public class ConfigFileParser {
                 node.setExDomain(parseBoolDomain(exDomain));
 
                 node.setRanDomain(parseBoolDomain(ranDomain));
-                parenthesisCheckSimple(types, exDomain, ranDomain);
+                parenthesesCheckSimple(types, exDomain, ranDomain);
                 break;
 
             case "float":
                 node = new PyFloatNode();
                 node.setExDomain(parseFloatDomain(exDomain.toString()));
                 node.setRanDomain(parseFloatDomain(ranDomain));
-                parenthesisCheckSimple(types, exDomain, ranDomain);
+                parenthesesCheckSimple(types, exDomain, ranDomain);
                 break;
 
             case "list":
@@ -367,7 +367,7 @@ public class ConfigFileParser {
      * @param ranDomain The random domain
      * @throws InvalidConfigException If Node contains invalid characters
      */
-    private static void parenthesisCheckSimple(String types, String exDomain, String ranDomain) throws InvalidConfigException{
+    private static void parenthesesCheckSimple(String types, String exDomain, String ranDomain) throws InvalidConfigException{
         if (types.contains("(") || exDomain.contains("(") || ranDomain.contains("(")) {
             throw new InvalidConfigException("Simple Nodes should not contain opening parenthesis");
         }
@@ -399,7 +399,7 @@ public class ConfigFileParser {
                     exDomain.substring(exDomain.indexOf("(")+1).strip(),
                     ranDomain.substring(ranDomain.indexOf("(")+1).strip());
             node = new PyListNode<>(child);
-            parenthesisCheckIterable(types, exDomain, ranDomain);
+            parenthesesCheckIterable(types, exDomain, ranDomain);
 
         }
         else if (types.startsWith("set")) {
@@ -407,7 +407,7 @@ public class ConfigFileParser {
                     exDomain.substring(exDomain.indexOf("(")+1).strip(),
                     ranDomain.substring(ranDomain.indexOf("(")+1).strip());
             node = new PySetNode<>(child);
-            parenthesisCheckIterable(types, exDomain, ranDomain);
+            parenthesesCheckIterable(types, exDomain, ranDomain);
 
         }
         else if (types.startsWith("tuple")) {
@@ -415,7 +415,7 @@ public class ConfigFileParser {
                     exDomain.substring(exDomain.indexOf("(")+1).strip(),
                     ranDomain.substring(ranDomain.indexOf("(")+1).strip());
             node = new PyTupleNode<>(child);
-            parenthesisCheckIterable(types, exDomain, ranDomain);
+            parenthesesCheckIterable(types, exDomain, ranDomain);
 
         }
         else if (types.startsWith("dict")) {
@@ -466,7 +466,7 @@ public class ConfigFileParser {
      * @param ranDomain The random domain
      * @throws InvalidConfigException If Node contains invalid characters
      */
-    private static void parenthesisCheckIterable(String types, String exDomain, String ranDomain) throws InvalidConfigException{
+    private static void parenthesesCheckIterable(String types, String exDomain, String ranDomain) throws InvalidConfigException{
         if (!(types.contains("(") || exDomain.contains("(") || ranDomain.contains("("))) {
             throw new InvalidConfigException("Iterable Nodes should contain opening parenthesis");
         }
