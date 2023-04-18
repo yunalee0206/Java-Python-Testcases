@@ -96,19 +96,6 @@ public class ConfigFileParser {
         }
     }
 
-//    /**
-//     * Converts a JSONArray of strings into a List of strings
-//     *
-//     * @param jsonArray The JSONArray to be converted
-//     * @return The List of strings
-//     */
-//    private static List<String> stringArrayToList(JSONArray jsonArray) {
-//        List<String> list = new ArrayList<>();
-//        for (int i = 0; i < jsonArray.length(); i++) {
-//            list.add(jsonArray.getString(i));
-//        }
-//        return list;
-//    }
 
     /**
      * Removes whitespaces from a string
@@ -350,7 +337,6 @@ public class ConfigFileParser {
                 break;
 
             case "str":
-                System.out.println("xxxx");
                 node = createIterableNode(types, exDomain, ranDomain);
                 break;
 
