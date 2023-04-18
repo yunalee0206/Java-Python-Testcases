@@ -51,12 +51,11 @@ public class Main {
      */
     public static Set<TestCase> generateTests(String[] args) throws IOException, InvalidConfigException, InterruptedException {
         String configFilePath = args[0];
-        String buggyFilePath = args[1];
-        String referenceFilePath = args[2];
+        String buggyFilePath = args[2];
+        String referenceFilePath = args[1];
 
 
-        ConfigFileParser configParser = new ConfigFileParser();
-        ConfigFile config = configParser.parse(configParser.readFile(configFilePath));
+        ConfigFile config = ConfigFileParser.parse(ConfigFileParser.readFile(configFilePath));
 
         BaseSetGenerator baseGenerator = new BaseSetGenerator(config.getNodes(), config.getNumRand());
         Tester testerObj = new Tester(config.getFuncName(), referenceFilePath, buggyFilePath, baseGenerator.genBaseSet());

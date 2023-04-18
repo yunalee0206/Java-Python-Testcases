@@ -37,7 +37,7 @@ public class ConfigFileParser {
         try {jsonObject = new JSONObject(contents);
         }
         catch (JSONException c) {
-            throw new InvalidConfigException("jsonObject is not a valid JSONObject");
+            throw new InvalidConfigException("Invalid JSONObject");
         }
 
         Set<String> keySet = new HashSet<>(Set.of("fname", "num random", "types", "exhaustive domain", "random domain"));
@@ -56,7 +56,6 @@ public class ConfigFileParser {
         catch (Exception c) {
             throw new InvalidConfigException("numRand is not an Integer");
         };
-        System.out.println(numRand + " numrand");
 
         JSONArray types = genJSONArray("types", jsonObject);
         JSONArray exDomain = genJSONArray("exhaustive domain", jsonObject);
@@ -130,7 +129,7 @@ public class ConfigFileParser {
             }
 
         } catch (NumberFormatException e) {
-            throw new InvalidConfigException("Failed to parse; invalid range");
+            throw new InvalidConfigException("Failed to parse; Invalid Range");
         };
 
         int x = domain.indexOf("(");
@@ -143,14 +142,12 @@ public class ConfigFileParser {
             key = domain.substring(0, x);
         }
 
-        System.out.println(domain +" domain");
 
         String[] parts = removeWhiteSpace(key.strip().substring(1, key.strip().length()-1)).split(",");
         List<Integer> result = new ArrayList<>();
         try {
 
             for (String part : parts) {
-                System.out.println(part +" part");
                 result.add(Integer.parseInt(part));
 
             }
@@ -174,7 +171,7 @@ public class ConfigFileParser {
         List<Integer> result = parseIntDomain(domain);
         for (Integer part : result) {
             if (!part.equals(0) && !part.equals(1)) {
-                throw new InvalidConfigException("Invalid Boolean; input domain contains other than 0 or 1");
+                throw new InvalidConfigException("Invalid Boolean; Input domain contains other than 0 or 1");
             }
 
         }
@@ -225,7 +222,7 @@ public class ConfigFileParser {
             }
 
         } catch (NumberFormatException e) {
-            throw new InvalidConfigException("Failed to parse; invalid range");
+            throw new InvalidConfigException("Failed to parse; Invalid Range");
         };
 
         int x = domain.indexOf("(");
@@ -237,20 +234,12 @@ public class ConfigFileParser {
         else {
             key = domain.substring(0, x);
         }
-//
-//        System.out.println(key + " key");
-//        System.out.println(domain +" domain");
-//
-//        System.out.println(removeWhiteSpace(key.strip().substring(1, key.strip().length()-1)) + " x split");
 
         String[] parts = removeWhiteSpace(key.strip().substring(1, key.strip().length()-1)).split(",");
-//        System.out.println(Array.get(parts, 0).toString() + " " + Array.get(parts, 1));
-          System.out.println(parts.toString() + " parts");
-//        System.out.println(parts.getClass());
         List<Number> result = new ArrayList<>();
         try {
             for (String part : parts) {
-                result.add(Float.parseFloat(part));
+                result.add(Double.parseDouble(part));
             }
             return result;
         } catch (NumberFormatException n) {
@@ -285,7 +274,6 @@ public class ConfigFileParser {
      */
     private static APyNode<?> createNode(String types, String exDomain, String ranDomain) throws InvalidConfigException{
         APyNode<?> node;
-        System.out.println(types);
 
         int x = types.indexOf("(");
         String key;
@@ -296,7 +284,6 @@ public class ConfigFileParser {
         else {
             key = types.substring(0, x);
         }
-        System.out.println(key + "key");
 
         switch (key.strip()) {
             case "int":
@@ -308,7 +295,6 @@ public class ConfigFileParser {
 
 
             case "bool":
-                System.out.println(exDomain + "EXDOMAIN");
                 node = new PyBoolNode();
                 node.setExDomain(parseBoolDomain(exDomain));
 
@@ -340,7 +326,7 @@ public class ConfigFileParser {
                 node = createIterableNode(types, exDomain, ranDomain);
                 break;
 
-            default:  throw new InvalidConfigException("Invalid Node - simple");
+            default:  throw new InvalidConfigException("Invalid Simple Node");
         }
         return node;
     }
@@ -355,7 +341,7 @@ public class ConfigFileParser {
      */
     private static void parenthesesCheckSimple(String types, String exDomain, String ranDomain) throws InvalidConfigException{
         if (types.contains("(") || exDomain.contains("(") || ranDomain.contains("(")) {
-            throw new InvalidConfigException("Simple Nodes should not contain opening parenthesis");
+            throw new InvalidConfigException("Simple Nodes should not contain opening parentheses");
         }
         if (types.contains(":") || exDomain.contains(":") || ranDomain.contains(":")) {
             throw new InvalidConfigException("Simple Nodes should not contain colon");
@@ -374,11 +360,6 @@ public class ConfigFileParser {
     private static APyNode<?> createIterableNode(String types, String exDomain, String ranDomain)
             throws InvalidConfigException {
         APyNode<?> node;
-        System.out.println(types);
-        System.out.println(types.substring(types.indexOf("(")+1).strip());
-
-
-
 
         if (types.startsWith("list")) {
             APyNode<?> child = createNode(types.substring(types.indexOf("(")+1).strip(),
@@ -406,12 +387,12 @@ public class ConfigFileParser {
         }
         else if (types.startsWith("dict")) {
             if (!(types.contains("(") || exDomain.contains("(") || ranDomain.contains("("))) {
-                throw new InvalidConfigException("Dict nodes should contain opening parenthesis");
+                throw new InvalidConfigException("Dict nodes should contain opening parentheses");
             }
             if (!(types.contains(":") || exDomain.contains(":") || ranDomain.contains(":")) ){
                 throw new InvalidConfigException("Dict Nodes should contain colon");
             }
-            //System.out.println(exDomain.substring(exDomain.indexOf("(")+1, exDomain.indexOf(":")).strip() + " leftchild");
+
 
             APyNode<?> leftChild = createNode(types.substring(types.indexOf("(")+1, types.indexOf(":")).strip(),
                     exDomain.substring(exDomain.indexOf("(")+1, exDomain.indexOf(":")).strip(),
@@ -428,7 +409,6 @@ public class ConfigFileParser {
             for (Character c : contents.toCharArray()) {
                 strSet.add(c);
             }
-            System.out.println(strSet);
 
             node = new PyStringNode(strSet);
             node.setExDomain(parseIterableDomain(exDomain));
@@ -436,7 +416,6 @@ public class ConfigFileParser {
         }
 
         else {throw new InvalidConfigException("Invalid Iterable Node");}
-        System.out.println(exDomain);
         if (!(types.startsWith("str"))) {
             node.setExDomain(parseIntDomain(exDomain.substring(0, exDomain.indexOf("("))));
             node.setRanDomain(parseIntDomain(ranDomain.substring(0, ranDomain.indexOf("("))));
@@ -445,7 +424,7 @@ public class ConfigFileParser {
     }
 
     /**
-     * Performs parenthesis and colon checks for iterable types of Nodes
+     * Performs parentheses and colon checks for iterable types of Nodes
      *
      * @param types The type of iterable APyNode
      * @param exDomain The exhaustive domain
@@ -454,7 +433,7 @@ public class ConfigFileParser {
      */
     private static void parenthesesCheckIterable(String types, String exDomain, String ranDomain) throws InvalidConfigException{
         if (!(types.contains("(") || exDomain.contains("(") || ranDomain.contains("("))) {
-            throw new InvalidConfigException("Iterable Nodes should contain opening parenthesis");
+            throw new InvalidConfigException("Iterable Nodes should contain opening parentheses");
         }
         if (types.contains(":") || exDomain.contains(":") || ranDomain.contains(":")) {
             throw new InvalidConfigException("Iterable Nodes (not dict) should not contain colon");
