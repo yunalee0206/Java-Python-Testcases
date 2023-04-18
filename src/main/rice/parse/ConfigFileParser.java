@@ -239,21 +239,6 @@ public class ConfigFileParser {
         } catch (NumberFormatException e) {
             throw new InvalidConfigException("Failed to parse; invalid range");
         };
-//        int x = domain.indexOf("(");
-//        String key;
-//        String contents;
-//        if (x == -1) {
-//            key = domain;
-//        }
-//        else {
-//            key = domain.substring(0, x);
-//        }
-//
-//        System.out.println(domain +" domain");
-//
-//        String[] parts = removeWhiteSpace(key.strip().substring(1, key.strip().length()-1)).split(",");
-//        List<Integer> result = new ArrayList<>();
-//        try {
 
         int x = domain.indexOf("(");
         String key;
@@ -265,7 +250,11 @@ public class ConfigFileParser {
             key = domain.substring(0, x);
         }
 
-        String[] parts = new String[]{removeWhiteSpace(Arrays.toString(key.strip().substring(1, key.strip().length() - 1).split(",")))};
+        System.out.println(key + " key");
+        System.out.println(domain +" domain");
+
+        String[] parts = removeWhiteSpace(key.strip().substring(0, key.strip().length()-1)).split(",");
+        System.out.println(parts + " parts");
         List<Number> result = new ArrayList<>();
         try {
             for (String part : parts) {
